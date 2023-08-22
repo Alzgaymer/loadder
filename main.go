@@ -1,10 +1,7 @@
 package main
 
-const (
-	ProjectName = "loadder"
-	version     = 0.1
-)
+import "loadder/cmd"
 
 func main() {
-
+	cmd.Execute()
 }
