@@ -1,10 +1,8 @@
-domain: localhost:80
-address: localhost
-ports: 8080...8083
-
-
 services:
   - first-service:
+      domain: localhost:80
+      address: localhost
+      ports: 8080...8083
       requests:
         #request type: path
         - get: /hello-world
