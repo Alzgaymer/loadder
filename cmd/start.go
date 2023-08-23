@@ -4,7 +4,11 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"gopkg.in/yaml.v3"
+	"io"
 	"loadder/internal/config"
+	"os"
+	"path/filepath"
 )
 
 // startCmd represents the start command
@@ -14,31 +18,46 @@ var startCmd = &cobra.Command{
 	Long:  `Starts loadder with specified port.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// parse config
-		_, err := ParseConfig(cmd)
+		file, err := os.Open(filepath.Clean(configPath))
 		if err != nil {
 			return err
 		}
-		// set config
+		defer file.Close()
+
+		cfg, err := ParseConfig(cmd, file)
+		if err != nil {
+			return err
+		}
+
+		for serviceID, service := range cfg.Services {
+			router, err := service.Requests.HTTP.Router()
+			if err != nil {
+				return err
+			}
+
+		}
 		// configure load balancer
 		// start load balancer
+
+		return nil
 	},
 }
 
 var (
 	port       = new(uint16)
-	configFile string
+	configPath string
 )
 
 func StartCommand(flags *pflag.FlagSet) {
 	flags.Uint16VarP(port, "port", "p", 8080, "Specifies application running port")
-	configFile = *flags.String("config", ".loadder.yml", "Defines config file")
+	configPath = *flags.String("config", ".loadder.yml", "Defines config file")
 }
 
 func InvalidValue(key, v, t string) error {
 	return fmt.Errorf("invalid parametr `%s` with value:%s, type: %s", key, v, t)
 }
 
-func ParseConfig(cmd *cobra.Command) (*config.Config, error) {
+func ParseConfig(cmd *cobra.Command, r io.Reader) (*config.Config, error) {
 	cfg := &config.Config{}
 
 	v := cmd.Flag("port").Value
@@ -46,5 +65,17 @@ func ParseConfig(cmd *cobra.Command) (*config.Config, error) {
 		return nil, InvalidValue("port", v.String(), v.Type())
 	}
 
-	cfg.Port = v.String()
+	cfg.LoadBalancerPort = v.String()
+
+	text, err := io.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+
+	err = yaml.Unmarshal(text, &cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return cfg, nil
 }

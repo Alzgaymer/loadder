@@ -1,8 +1,6 @@
 package config
 
 type Config struct {
-	Port string
-}
-
-type Service struct {
+	Services         map[string]*Service `yaml:"services"`
+	LoadBalancerPort string
 }

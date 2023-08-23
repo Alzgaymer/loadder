@@ -1,9 +1,13 @@
 services:
   first-service:
       service-name: hello-world
-      domain: localhost:80
       address: localhost
-      ports: 8080...8083
+      ports:
+        - 8080
+        - 8081
       requests:
-        #request type: path
-        - get: /hello-world
+          http:
+            GET:
+                /hello-world: RR
+                /stop-the-world/{s}: RR
+            POST:
