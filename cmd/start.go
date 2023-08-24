@@ -7,6 +7,9 @@ import (
 	"gopkg.in/yaml.v3"
 	"io"
 	"loadder/internal/config"
+	lb "loadder/internal/domain/load_balancer"
+	"loadder/internal/domain/routes"
+	"net/http"
 	"os"
 	"path/filepath"
 )
@@ -29,15 +32,23 @@ var startCmd = &cobra.Command{
 			return err
 		}
 
-		for serviceID, service := range cfg.Services {
-			router, err := service.Requests.HTTP.Router()
-			if err != nil {
-				return err
-			}
-
+		router, err := routes.ExtractRoutes(cfg)
+		if err != nil {
+			return err
 		}
+
+		server := &http.Server{
+			Addr:    ":" + cfg.LoadBalancerPort,
+			Handler: router,
+		}
+
 		// configure load balancer
+		loadBalancer := lb.NewLoadBalancer(server)
+
 		// start load balancer
+		if err = loadBalancer.Run(cmd.Context()); err != nil {
+			return err
+		}
 
 		return nil
 	},
@@ -57,6 +68,7 @@ func InvalidValue(key, v, t string) error {
 	return fmt.Errorf("invalid parametr `%s` with value:%s, type: %s", key, v, t)
 }
 
+// TODO move Parse to config package and refactor to provide yaml, json unmarshal
 func ParseConfig(cmd *cobra.Command, r io.Reader) (*config.Config, error) {
 	cfg := &config.Config{}
 

@@ -9,5 +9,3 @@ services:
           http:
             GET:
                 /hello-world: RR
-                /stop-the-world/{s}: RR
-            POST:

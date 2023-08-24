@@ -16,7 +16,7 @@ func AddCommands(command *cobra.Command) {
 	command.AddCommand(startCmd)
 	StartCommand(startCmd.PersistentFlags())
 
-	command.AddCommand(stopCmd)
+	//command.AddCommand(stopCmd)
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
