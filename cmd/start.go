@@ -11,7 +11,6 @@ import (
 	"loadder/internal/domain/routes"
 	"net/http"
 	"os"
-	"path/filepath"
 )
 
 // startCmd represents the start command
@@ -21,7 +20,7 @@ var startCmd = &cobra.Command{
 	Long:  `Starts loadder with specified port.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// parse config
-		file, err := os.Open(filepath.Clean(configPath))
+		file, err := os.Open(configPath)
 		if err != nil {
 			return err
 		}
@@ -61,7 +60,7 @@ var (
 
 func StartCommand(flags *pflag.FlagSet) {
 	flags.Uint16VarP(port, "port", "p", 8080, "Specifies application running port")
-	configPath = *flags.String("config", ".loadder.yml", "Defines config file")
+	flags.StringVarP(&configPath, "config", "c", ".loadder.yml", "Defines config file")
 }
 
 func InvalidValue(key, v, t string) error {

@@ -104,3 +104,4 @@ go.work
 ### For tests
 
 .test*
+*.http

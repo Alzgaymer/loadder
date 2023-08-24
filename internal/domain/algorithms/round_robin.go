@@ -2,6 +2,8 @@ package algorithms
 
 import (
 	"container/ring"
+	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -14,7 +16,7 @@ func NewRoundRobin(client *http.Client, address string, ports ...string) *RoundR
 	r := ring.New(len(ports))
 
 	for i := 0; i < len(ports); i++ {
-		r.Value = string(append([]byte(address), ports[i]...))
+		r.Value = string(append([]byte(address+":"), ports[i]...))
 		r = r.Next()
 	}
 
@@ -23,15 +25,35 @@ func NewRoundRobin(client *http.Client, address string, ports ...string) *RoundR
 
 func (rr *RoundRobin) Handler() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		host := rr.hosts.Value
-		rr.hosts = rr.hosts.Next()
+		r.Host = rr.iterate()
 
-		r.URL.Host = host.(string)
+		req, err := http.NewRequestWithContext(r.Context(), r.Method, fmt.Sprintf("http://%s%s", r.Host, r.URL.Path), http.NoBody)
+		if err != nil {
+			// rr.logger
+			log.Printf("%v\n", err)
+			w.WriteHeader(http.StatusBadRequest)
 
-		resp, _ := rr.client.Get(r.URL.String())
+			return
+		}
+
+		resp, err := rr.client.Do(req)
+		if err != nil {
+			// rr.logger
+			log.Printf("%v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+
+			return
+		}
 		defer resp.Body.Close()
 
 		w.WriteHeader(resp.StatusCode)
 		resp.Write(w)
 	}
+}
+
+func (rr *RoundRobin) iterate() string {
+	host := rr.hosts.Value
+	rr.hosts = rr.hosts.Next()
+
+	return host.(string)
 }
