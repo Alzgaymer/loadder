@@ -5,7 +5,16 @@ vars:
     NO_COLOR: '\033[0m'
 
 tasks:
+
   lint:
     desc: Run linters
     cmds:
       - golangci-lint run -c .golangci.yml
+  build-example-server:
+    desc: Build __example/server.go
+    cmds:
+      - GOOS=linux GOARCH=amd64 go build -buildvcs=false -ldflags="-s -w" -o bin/server __example/server.go
+  build-loadder:
+    desc: Build loadder
+    cmds:
+      - GOOS=linux GOARCH=amd64 go build -buildvcs=false -ldflags="-s -w" -o bin/loadder main.go

@@ -1,11 +1,10 @@
 services:
   first-service:
-      service-name: hello-world
-      address: localhost
-      ports:
-        - 9000
-        - 9001
-      requests:
-          http:
-            GET:
-                /hello-world: RR
+    service-name: hello-world
+    service-address: localhost
+    service-ports: 9000...9001
+    exclude:
+      - 9003
+    proxy-port: 8080
+    requests:
+        http:

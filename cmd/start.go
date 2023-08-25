@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
@@ -9,7 +8,6 @@ import (
 	"loadder/internal/config"
 	lb "loadder/internal/domain/load_balancer"
 	"loadder/internal/domain/routes"
-	"net/http"
 	"os"
 )
 
@@ -26,20 +24,12 @@ var startCmd = &cobra.Command{
 		}
 		defer file.Close()
 
-		cfg, err := ParseConfig(cmd, file)
+		cfg, err := ParseConfig(file)
 		if err != nil {
 			return err
 		}
 
-		router, err := routes.ExtractRoutes(cfg)
-		if err != nil {
-			return err
-		}
-
-		server := &http.Server{
-			Addr:    ":" + cfg.LoadBalancerPort,
-			Handler: router,
-		}
+		routes := routes.Routes(cfg)
 
 		// configure load balancer
 		loadBalancer := lb.NewLoadBalancer(server)
@@ -54,29 +44,16 @@ var startCmd = &cobra.Command{
 }
 
 var (
-	port       = new(uint16)
 	configPath string
 )
 
 func StartCommand(flags *pflag.FlagSet) {
-	flags.Uint16VarP(port, "port", "p", 8080, "Specifies application running port")
 	flags.StringVarP(&configPath, "config", "c", ".loadder.yml", "Defines config file")
 }
 
-func InvalidValue(key, v, t string) error {
-	return fmt.Errorf("invalid parametr `%s` with value:%s, type: %s", key, v, t)
-}
-
 // TODO move Parse to config package and refactor to provide yaml, json unmarshal
-func ParseConfig(cmd *cobra.Command, r io.Reader) (*config.Config, error) {
+func ParseConfig(r io.Reader) (*config.Config, error) {
 	cfg := &config.Config{}
-
-	v := cmd.Flag("port").Value
-	if v.Type() != "uint16" {
-		return nil, InvalidValue("port", v.String(), v.Type())
-	}
-
-	cfg.LoadBalancerPort = v.String()
 
 	text, err := io.ReadAll(r)
 	if err != nil {

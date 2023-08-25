@@ -7,7 +7,12 @@ import (
 )
 
 type LoadBalancer struct {
-	server *http.Server
+	server   *http.Server
+	backends []*Backend
+}
+
+func (l *LoadBalancer) Add(v ...*Backend) {
+	l.backends = append(l.backends, v...)
 }
 
 func NewLoadBalancer(server *http.Server) *LoadBalancer {
@@ -20,10 +25,10 @@ func (l *LoadBalancer) Stop(ctx context.Context) error {
 
 func (l *LoadBalancer) Run(ctx context.Context) error {
 	errs := make(chan error)
-	defer close(errs)
 
 	go func() {
 		errs <- l.server.ListenAndServe()
+		close(errs)
 	}()
 
 	for {
