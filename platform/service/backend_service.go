@@ -13,12 +13,17 @@ import (
 )
 
 type BackendService struct { //nolint:govet
+	name     string
 	backends lb.Backends
 	server   *http.Server
 }
 
-func NewBackendService(backends lb.Backends, server *http.Server) *BackendService {
-	return &BackendService{backends: backends, server: server}
+func (b *BackendService) Name() string {
+	return b.name
+}
+
+func NewBackendService(name string, backends lb.Backends, server *http.Server) *BackendService {
+	return &BackendService{name: name, backends: backends, server: server}
 }
 
 func (b *BackendService) Shutdown(ctx context.Context) error {
@@ -49,7 +54,7 @@ func Parse(c *config.Config) ([]*BackendService, error) {
 			Addr: ":" + service.ProxyPort,
 		}
 
-		services = append(services, NewBackendService(backends, server))
+		services = append(services, NewBackendService(service.Name, backends, server))
 	}
 
 	return services, nil
