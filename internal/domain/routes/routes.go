@@ -3,37 +3,66 @@ package routes
 import (
 	"fmt"
 	"loadder/internal/config"
-	"net/http"
-	"net/http/httputil"
+	lb "loadder/internal/domain/load_balancer"
 	"net/url"
 	"strconv"
 	"strings"
 )
 
-func Routes(c *config.Config) ([]*httputil.ReverseProxy, error) {
+func Parse(c *config.Config) ([]*lb.Service, error) {
+	services := make([]*lb.Service, 0, len(c.Services))
+
 	for _, service := range c.Services {
 		ports, err := parsePorts(service.Ports, service.Exclude)
 		if err != nil {
 			return nil, err
 		}
 
-		proxies := make([]*httputil.ReverseProxy, len(ports))
-		for i, port := range ports {
-			u, err := url.Parse(port)
-			if err != nil {
-				return nil, err
-			}
-			proxy := httputil.NewSingleHostReverseProxy(u)
+		urls, err := parsURLs(parseHostPorts(service.Address, ports))
+		if err != nil {
+			return nil, err
+		}
 
-			proxy.ErrorHandler = func(writer http.ResponseWriter, request *http.Request, err error) {
+		backends := lb.ParseBackends(urls...)
 
-			}
+		services = append(services, lb.NewService(backends))
+	}
 
-			proxies[i] = proxy
+	return services, nil
+}
 
+func parsURLs(addresses []string) ([]*url.URL, error) {
+	var (
+		n   = len(addresses)
+		res = make([]*url.URL, n)
+		err error
+	)
+
+	for i := 0; i < n; i++ {
+		res[i], err = url.Parse(addresses[i])
+		if err != nil {
+			return nil, err
 		}
 	}
 
+	return res, err
+}
+
+func parseHostPorts(host string, ports []string) []string {
+	n := len(ports)
+	res := make([]string, n)
+	sb := &strings.Builder{}
+	for i := 0; i < n; i++ {
+		sb.WriteString(host)
+		sb.WriteString(":")
+		sb.WriteString(ports[i])
+
+		res[i] = sb.String()
+
+		sb.Reset()
+	}
+
+	return res
 }
 
 func parsePorts(portsStr string, toExclude []string) ([]string, error) {

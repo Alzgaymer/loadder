@@ -8,11 +8,11 @@ import (
 
 type LoadBalancer struct {
 	server   *http.Server
-	backends []*Backend
+	services []*Service
 }
 
-func (l *LoadBalancer) Add(v ...*Backend) {
-	l.backends = append(l.backends, v...)
+func (l *LoadBalancer) Add(v ...*Service) {
+	l.services = append(l.services, v...)
 }
 
 func NewLoadBalancer(server *http.Server) *LoadBalancer {

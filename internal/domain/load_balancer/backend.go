@@ -6,9 +6,30 @@ import (
 	"sync"
 )
 
-type Backend struct { //nolint:govet
-	URL   *url.URL
+type Backend struct {
 	Alive bool
+	api   *httputil.ReverseProxy
 	mux   sync.RWMutex
-	proxy *httputil.ReverseProxy
+}
+
+func NewBackend(api *httputil.ReverseProxy) *Backend {
+	return &Backend{api: api}
+}
+
+type Backends struct {
+	apis map[*url.URL]*Backend
+}
+
+func NewBackends(apis map[*url.URL]*Backend) *Backends {
+	return &Backends{apis: apis}
+}
+
+func ParseBackends(urls ...*url.URL) *Backends {
+	apis := make(map[*url.URL]*Backend)
+
+	for _, u := range urls {
+		apis[u] = NewBackend(httputil.NewSingleHostReverseProxy(u))
+	}
+
+	return NewBackends(apis)
 }

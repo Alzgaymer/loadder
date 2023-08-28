@@ -29,10 +29,15 @@ var startCmd = &cobra.Command{
 			return err
 		}
 
-		routes := routes.Routes(cfg)
+		services, err := routes.Parse(cfg)
+		if err != nil {
+			return err
+		}
 
 		// configure load balancer
 		loadBalancer := lb.NewLoadBalancer(server)
+
+		loadBalancer.Add(services...)
 
 		// start load balancer
 		if err = loadBalancer.Run(cmd.Context()); err != nil {
