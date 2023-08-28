@@ -1,50 +1,57 @@
 package backend
 
 import (
-	"errors"
-	"loadder/internal/domain/algorithm"
-	lb "loadder/internal/domain/load_balancer"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"sync"
 )
 
+type Backends []*Backend
+
 type Backend struct { //nolint:govet
-	Alive     bool
-	api       *httputil.ReverseProxy
-	mux       sync.RWMutex
-	Algorithm algorithm.Algorithm
+	alive bool
+	host  string
+	api   *httputil.ReverseProxy
+	mux   sync.RWMutex
 }
 
-func NewBackend(api *httputil.ReverseProxy) *Backend {
-	return &Backend{api: api}
+func NewBackend(host string, api *httputil.ReverseProxy) *Backend {
+	return &Backend{host: host, api: api}
 }
 
-type Backends map[string]lb.Backend
+func (b *Backend) Alive() bool {
+	b.mux.RLock()
+	defer b.mux.RUnlock()
 
-func (b Backends) Add(ports []string, backends ...lb.Backend) error {
-	if len(ports) != len(backends) {
-		return errors.New("length of ports and backends doesn't match")
+	return b.alive
+}
+func (b *Backend) IsAlive() bool {
+	b.mux.Lock()
+	defer b.mux.Unlock()
+
+	dial, err := net.Dial("tcp", b.host)
+	if err != nil {
+		return false
 	}
+	defer dial.Close()
 
-	for i, port := range ports {
-		b[port] = backends[i]
-	}
+	b.alive = true
 
-	return nil
+	return b.alive
 }
 
 func (b *Backend) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	b.api.ServeHTTP(w, r)
 }
 
-func ParseBackends(urls ...*url.URL) Backends {
-	var apis Backends
+func CreateBackends(u ...*url.URL) Backends {
+	backs := make(Backends, len(u))
 
-	for _, u := range urls {
-		_ = apis.Add([]string{u.Host}, NewBackend(httputil.NewSingleHostReverseProxy(u)))
+	for i, url := range u {
+		backs[i] = NewBackend(url.Host, httputil.NewSingleHostReverseProxy(url))
 	}
 
-	return apis
+	return backs
 }

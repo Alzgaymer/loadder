@@ -1,7 +1,8 @@
-package algorithm
+package service
 
 import (
 	"errors"
+	"loadder/platform/backend"
 	"net/http"
 )
 
@@ -32,30 +33,17 @@ const (
 
 type Algorithm interface {
 	http.Handler
-	Set(b Backends)
 }
 
-type Builder struct {
-	client  *http.Client
-	address string
-	ports   []string
-}
-
-func NewBuilder(client *http.Client, address string, ports []string) *Builder {
-	return &Builder{client: client, address: address, ports: ports}
-}
-
-func (b *Builder) DefineAlgorithm(algo string) (Algorithm, error) {
+func DefineAlgorithm(algo string, b ...*backend.Backend) (Algorithm, error) {
 	switch algo {
 	case RR:
+		return NewRoundRobinAlgorithm(b...), nil
 	case WRR:
 	case LC:
 	case LRT:
 	case LB:
 	case H:
-	default:
-		return nil, ErrInvalidAlgorithm
 	}
-
-	return nil, nil
+	return nil, ErrInvalidAlgorithm
 }

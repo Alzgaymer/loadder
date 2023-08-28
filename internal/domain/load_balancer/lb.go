@@ -24,10 +24,8 @@ type Service interface {
 
 type Backend interface {
 	http.Handler
-}
-
-type Backends interface {
-	Add(port []string, b ...Backend) error
+	Alive() bool
+	IsAlive() bool
 }
 
 func (l *LoadBalancer) Add(v Service) {
@@ -35,8 +33,8 @@ func (l *LoadBalancer) Add(v Service) {
 }
 
 type response struct {
-	ServiceName string
 	err         error
+	ServiceName string
 }
 
 func (l *LoadBalancer) Run(ctx context.Context) error {
@@ -49,14 +47,14 @@ func (l *LoadBalancer) Run(ctx context.Context) error {
 
 	// for every service we start goroutine with ListenAndServer server and waiting until it close or ctx.Done channel
 	for _, service := range l.services {
-		go func(ctx context.Context, service Service, res chan *response) {
+		go func(ctx context.Context, service Service, res chan<- *response) {
 			defer wg.Done()
 
 			errs := make(chan error)
+			defer close(errs)
 
 			go func(err chan<- error) {
 				err <- service.ListenAndServe()
-				close(err)
 			}(errs)
 
 			for {
@@ -68,12 +66,16 @@ func (l *LoadBalancer) Run(ctx context.Context) error {
 							ServiceName: service.Name(),
 							err:         errors.Join(err, ctx.Err()),
 						}
+
+						return
 					}
 
 					res <- &response{
 						ServiceName: service.Name(),
 						err:         ctx.Err(),
 					}
+
+					return
 				case err := <-errs:
 					if err != nil && !errors.Is(err, http.ErrServerClosed) {
 						res <- &response{
@@ -83,6 +85,8 @@ func (l *LoadBalancer) Run(ctx context.Context) error {
 					}
 
 					res <- nil
+
+					return
 				}
 			}
 		}(ctx, service, res)

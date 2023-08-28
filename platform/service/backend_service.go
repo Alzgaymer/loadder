@@ -13,17 +13,17 @@ import (
 )
 
 type BackendService struct { //nolint:govet
-	name     string
-	backends lb.Backends
-	server   *http.Server
+	name string
+
+	server *http.Server
+}
+
+func NewBackendService(name string, server *http.Server) *BackendService {
+	return &BackendService{name: name, server: server}
 }
 
 func (b *BackendService) Name() string {
 	return b.name
-}
-
-func NewBackendService(name string, backends lb.Backends, server *http.Server) *BackendService {
-	return &BackendService{name: name, backends: backends, server: server}
 }
 
 func (b *BackendService) Shutdown(ctx context.Context) error {
@@ -34,8 +34,8 @@ func (b *BackendService) ListenAndServe() error {
 	return b.server.ListenAndServe()
 }
 
-func Parse(c *config.Config) ([]*BackendService, error) {
-	services := make([]*BackendService, 0, len(c.Services))
+func Parse(c *config.Config) ([]lb.Service, error) {
+	services := make([]lb.Service, 0, len(c.Services))
 
 	for _, service := range c.Services {
 		ports, err := parsePorts(service.Ports, service.Exclude)
@@ -48,13 +48,19 @@ func Parse(c *config.Config) ([]*BackendService, error) {
 			return nil, err
 		}
 
-		backends := backend.ParseBackends(urls...)
+		backends := backend.CreateBackends(urls...)
 
-		server := &http.Server{
-			Addr: ":" + service.ProxyPort,
+		algorithm, err := DefineAlgorithm(service.Algorithm, backends...)
+		if err != nil {
+			return nil, err
 		}
 
-		services = append(services, NewBackendService(service.Name, backends, server))
+		server := &http.Server{
+			Addr:    ":" + service.ProxyPort,
+			Handler: algorithm,
+		}
+
+		services = append(services, NewBackendService(service.Name, server))
 	}
 
 	return services, nil
