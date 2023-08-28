@@ -86,16 +86,9 @@ func parsURLs(addresses []string) ([]*url.URL, error) {
 func parseHostPorts(host string, ports []string) []string {
 	n := len(ports)
 	res := make([]string, n)
-	sb := &strings.Builder{}
 
 	for i := 0; i < n; i++ {
-		sb.WriteString(host)
-		sb.WriteString(":")
-		sb.WriteString(ports[i])
-
-		res[i] = sb.String()
-
-		sb.Reset()
+		res[i] = fmt.Sprintf("http://%s:%s", host, ports[i])
 	}
 
 	return res

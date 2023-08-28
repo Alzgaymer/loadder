@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"github.com/go-chi/chi/v5"
 	"log"
 	"net/http"
 )
@@ -15,13 +14,13 @@ func main() {
 
 	flag.Parse()
 
-	router := chi.NewRouter()
+	mux := http.NewServeMux()
 
-	router.Get("/hello-world", func(writer http.ResponseWriter, request *http.Request) {
-		log.Printf("Hello World!")
+	mux.HandleFunc("/hello-world", func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("Hello world!\n")
 	})
 
-	server := &http.Server{Addr: *port, Handler: router}
+	server := &http.Server{Addr: *port, Handler: mux}
 
 	log.Fatalln(server.ListenAndServe())
 }
