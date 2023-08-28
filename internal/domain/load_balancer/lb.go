@@ -9,8 +9,11 @@ import (
 )
 
 type LoadBalancer struct {
-	server   *http.Server
 	services []Service
+}
+
+func NewLoadBalancer(services ...Service) *LoadBalancer {
+	return &LoadBalancer{services: services}
 }
 
 type Service interface {
@@ -27,16 +30,8 @@ type Backends interface {
 	Add(port []string, b ...Backend) error
 }
 
-func (l *LoadBalancer) Add(v ...Service) {
-	l.services = append(l.services, v...)
-}
-
-func NewLoadBalancer(server *http.Server, services ...Service) *LoadBalancer {
-	return &LoadBalancer{server: server, services: services}
-}
-
-func (l *LoadBalancer) Stop(ctx context.Context) error {
-	return l.server.Shutdown(ctx)
+func (l *LoadBalancer) Add(v Service) {
+	l.services = append(l.services, v)
 }
 
 type response struct {
@@ -45,10 +40,14 @@ type response struct {
 }
 
 func (l *LoadBalancer) Run(ctx context.Context) error {
+	// res stands for every service proxy server error channel
 	res := make(chan *response, len(l.services))
+	// wg stands for closing every proxy server and close res channel
 	wg := sync.WaitGroup{}
+
 	wg.Add(len(l.services))
 
+	// for every service we start goroutine with ListenAndServer server and waiting until it close or ctx.Done channel
 	for _, service := range l.services {
 		go func(ctx context.Context, service Service, res chan *response) {
 			defer wg.Done()
@@ -89,11 +88,13 @@ func (l *LoadBalancer) Run(ctx context.Context) error {
 		}(ctx, service, res)
 	}
 
+	// waits in parallel for every proxy goroutine. Only closing response channel means
 	go func() {
 		wg.Wait()
 		close(res)
 	}()
 
+	// listening for responses from proxy servers
 	for r := range res {
 		log.Println(r)
 	}

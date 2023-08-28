@@ -35,7 +35,11 @@ var startCmd = &cobra.Command{
 		}
 
 		// configure load balancer
-		loadBalancer := lb.NewLoadBalancer(server, services...)
+		loadBalancer := lb.NewLoadBalancer()
+
+		for _, backendService := range services {
+			loadBalancer.Add(backendService)
+		}
 
 		// start load balancer
 		if err = loadBalancer.Run(cmd.Context()); err != nil {
