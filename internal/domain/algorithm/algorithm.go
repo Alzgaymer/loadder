@@ -1,4 +1,4 @@
-package algorithms
+package algorithm
 
 import (
 	"errors"
@@ -31,7 +31,8 @@ const (
 )
 
 type Algorithm interface {
-	Handler() func(w http.ResponseWriter, r *http.Request)
+	http.Handler
+	Set(b Backends)
 }
 
 type Builder struct {
@@ -47,7 +48,6 @@ func NewBuilder(client *http.Client, address string, ports []string) *Builder {
 func (b *Builder) DefineAlgorithm(algo string) (Algorithm, error) {
 	switch algo {
 	case RR:
-		return NewRoundRobin(b.client, b.address, b.ports...), nil
 	case WRR:
 	case LC:
 	case LRT:

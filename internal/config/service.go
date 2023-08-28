@@ -6,4 +6,5 @@ type Service struct { //nolint:govet
 	Ports     string   `yaml:"service-ports"`
 	Exclude   []string `yaml:"exclude"`
 	ProxyPort string   `yaml:"proxy-port"`
+	Algorithm string   `yaml:"algorithm"`
 }

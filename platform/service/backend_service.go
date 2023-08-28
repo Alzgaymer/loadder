@@ -1,16 +1,36 @@
-package routes
+package service
 
 import (
+	"context"
 	"fmt"
 	"loadder/internal/config"
 	lb "loadder/internal/domain/load_balancer"
+	"loadder/platform/backend"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 )
 
-func Parse(c *config.Config) ([]*lb.Service, error) {
-	services := make([]*lb.Service, 0, len(c.Services))
+type BackendService struct { //nolint:govet
+	backends lb.Backends
+	server   *http.Server
+}
+
+func NewBackendService(backends lb.Backends, server *http.Server) *BackendService {
+	return &BackendService{backends: backends, server: server}
+}
+
+func (b *BackendService) Shutdown(ctx context.Context) error {
+	return b.server.Shutdown(ctx)
+}
+
+func (b *BackendService) ListenAndServe() error {
+	return b.server.ListenAndServe()
+}
+
+func Parse(c *config.Config) ([]*BackendService, error) {
+	services := make([]*BackendService, 0, len(c.Services))
 
 	for _, service := range c.Services {
 		ports, err := parsePorts(service.Ports, service.Exclude)
@@ -23,9 +43,13 @@ func Parse(c *config.Config) ([]*lb.Service, error) {
 			return nil, err
 		}
 
-		backends := lb.ParseBackends(urls...)
+		backends := backend.ParseBackends(urls...)
 
-		services = append(services, lb.NewService(backends))
+		server := &http.Server{
+			Addr: ":" + service.ProxyPort,
+		}
+
+		services = append(services, NewBackendService(backends, server))
 	}
 
 	return services, nil
@@ -52,6 +76,7 @@ func parseHostPorts(host string, ports []string) []string {
 	n := len(ports)
 	res := make([]string, n)
 	sb := &strings.Builder{}
+
 	for i := 0; i < n; i++ {
 		sb.WriteString(host)
 		sb.WriteString(":")
@@ -81,6 +106,10 @@ func parsePorts(portsStr string, toExclude []string) ([]string, error) {
 		return nil, err
 	}
 
+	if (startPort == endPort) || (startPort <= 0 || endPort <= 0) || (startPort > 65535 || endPort > 65535) {
+		return nil, fmt.Errorf("invalid port format: %s", portsStr)
+	}
+
 	ports := []int{}
 	for p := startPort; p <= endPort; p++ {
 		ports = append(ports, p)
@@ -91,12 +120,14 @@ func parsePorts(portsStr string, toExclude []string) ([]string, error) {
 
 func resolveExcludedPorts(ports []int, excluded []string) []string {
 	excludedPorts := map[int]bool{}
+
 	for _, ex := range excluded {
 		port, _ := strconv.Atoi(ex)
 		excludedPorts[port] = true
 	}
 
 	var filteredPorts []string
+
 	for _, p := range ports {
 		if !excludedPorts[p] {
 			filteredPorts = append(filteredPorts, strconv.Itoa(p))

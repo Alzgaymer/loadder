@@ -7,7 +7,7 @@ import (
 	"io"
 	"loadder/internal/config"
 	lb "loadder/internal/domain/load_balancer"
-	"loadder/internal/domain/routes"
+	"loadder/platform/service"
 	"os"
 )
 
@@ -29,15 +29,13 @@ var startCmd = &cobra.Command{
 			return err
 		}
 
-		services, err := routes.Parse(cfg)
+		services, err := service.Parse(cfg)
 		if err != nil {
 			return err
 		}
 
 		// configure load balancer
-		loadBalancer := lb.NewLoadBalancer(server)
-
-		loadBalancer.Add(services...)
+		loadBalancer := lb.NewLoadBalancer(server, services...)
 
 		// start load balancer
 		if err = loadBalancer.Run(cmd.Context()); err != nil {

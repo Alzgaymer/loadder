@@ -6,5 +6,4 @@ services:
     exclude:
       - 9003
     proxy-port: 8080
-    requests:
-        http:
+    algorithm:

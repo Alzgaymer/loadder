@@ -53,7 +53,7 @@ services:
 			wantedErr: false,
 		},
 		{
-			name: "Add second method request",
+			name: "Set second method request",
 			args: []string{"--port", "8081"},
 			input: `
 services:
