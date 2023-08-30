@@ -1,7 +1,6 @@
 package lb
 
 import (
-	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -33,7 +32,7 @@ func (b *Backend) Alive() bool {
 }
 
 func (b *Backend) HealthCheck() error {
-	conn, err := net.DialTimeout("tcp", b.u.Host, b.healthCheck.timeoutDuration)
+	err := b.healthCheck.HealthCheck()
 	if err != nil {
 		b.mux.Lock()
 		b.alive = false
@@ -41,7 +40,6 @@ func (b *Backend) HealthCheck() error {
 
 		return err
 	}
-	defer conn.Close()
 
 	b.mux.Lock()
 	b.alive = true

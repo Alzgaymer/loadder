@@ -100,7 +100,7 @@ type Service interface {
 }
 
 type HealthCheck struct {
-	service            Service
+	Path               string
 	Interval           *time.Ticker
 	Timeout            *time.Ticker
 	intervalDuration   time.Duration
@@ -114,16 +114,16 @@ type HealthCheck struct {
 func (c *HealthCheck) HealthCheck() error {
 	for (c.currentTimeout < c.TimeoutThreshold) && (c.currentUnhealthy < c.UnhealthyThreshold) {
 		<-c.Interval.C
-
-		switch err := c.service.HealthCheck(); {
-		case errors.Is(err, context.DeadlineExceeded):
+		resp, err := http.Get(c.Path)
+		if errors.Is(err, context.DeadlineExceeded) {
 			c.currentTimeout++
-		case err != nil:
+		} else if err != nil || resp.StatusCode != http.StatusOK {
 			c.currentUnhealthy++
-		default:
-			c.currentTimeout = 0
-			c.currentUnhealthy = 0
+			return err
 		}
+
+		c.currentTimeout = 0
+		c.currentUnhealthy = 0
 	}
 
 	return nil
@@ -149,6 +149,7 @@ func Parse(c *config.Config) ([]Service, error) {
 		}
 
 		backends = append(backends, NewBackend(u, httputil.NewSingleHostReverseProxy(u), &HealthCheck{
+			Path:               service.Address + service.Healthcheck.Path,
 			Interval:           time.NewTicker(intervalDuration),
 			Timeout:            time.NewTicker(timeoutDuration),
 			intervalDuration:   intervalDuration,

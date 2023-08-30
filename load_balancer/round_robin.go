@@ -5,9 +5,8 @@ import (
 )
 
 type RoundRobinAlgorithm struct {
-	liveCount int
-	iterator  int
-	backends  []Service
+	backends []Service
+	iterator int
 }
 
 func NewRoundRobinAlgorithm(b ...Service) *RoundRobinAlgorithm {
@@ -15,20 +14,13 @@ func NewRoundRobinAlgorithm(b ...Service) *RoundRobinAlgorithm {
 }
 
 func (rr *RoundRobinAlgorithm) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if rr.liveCount == 0 {
-		return
+	if rr.iterator == len(rr.backends) {
+		rr.iterator = 0
 	}
 
-	for {
-		if rr.iterator == len(rr.backends) {
-			rr.iterator = 0
-		}
-
-		if rr.backends[rr.iterator].Alive() {
-			rr.iterator++
-			rr.backends[rr.iterator].ServeHTTP(w, r)
-		}
-
-		rr.iterator++
+	if rr.backends[rr.iterator].Alive() {
+		rr.backends[rr.iterator].ServeHTTP(w, r)
 	}
+
+	rr.iterator++
 }
