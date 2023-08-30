@@ -1,9 +1,22 @@
+algorithm: RR
+load-balancer-address: :8080
+
 services:
   first-service:
-    service-name: hello-world
-    service-address: localhost
-    service-ports: 9000...9001
-    exclude:
-      - 9003
-    proxy-port: 8080
-    algorithm: RR
+    name: hello-world-1
+    address: http://localhost:9000
+    healthcheck:
+      path: /healthcheck
+      interval: 1s
+      timeout: 2s
+      unhealthy-threshold: 2
+      timeout-threshold:
+  second-service:
+    name: hello-world-2
+    address: http://localhost:9001
+    healthcheck:
+      path: /healthcheck
+      interval: 1s
+      timeout: 2s
+      unhealthy-threshold: 2
+      timeout-threshold: 2

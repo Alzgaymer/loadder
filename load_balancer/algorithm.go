@@ -1,8 +1,7 @@
-package service
+package lb
 
 import (
 	"errors"
-	"loadder/platform/backend"
 	"net/http"
 )
 
@@ -35,7 +34,7 @@ type Algorithm interface {
 	http.Handler
 }
 
-func DefineAlgorithm(algo string, b ...*backend.Backend) (Algorithm, error) {
+func DefineAlgorithm(algo string, b ...Service) (Algorithm, error) {
 	switch algo {
 	case RR:
 		return NewRoundRobinAlgorithm(b...), nil
@@ -45,5 +44,6 @@ func DefineAlgorithm(algo string, b ...*backend.Backend) (Algorithm, error) {
 	case LB:
 	case H:
 	}
+
 	return nil, ErrInvalidAlgorithm
 }
