@@ -1,26 +1,16 @@
 package lb
 
-import (
-	"net/http"
-)
+import "net/http"
 
-type RoundRobinAlgorithm struct {
-	backends []Service
+type RoundRobin struct {
+	services []*Service
 	iterator int
 }
 
-func NewRoundRobinAlgorithm(b ...Service) *RoundRobinAlgorithm {
-	return &RoundRobinAlgorithm{backends: b}
+func (rr *RoundRobin) NextAlive() *Service {
+
 }
 
-func (rr *RoundRobinAlgorithm) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if rr.iterator == len(rr.backends) {
-		rr.iterator = 0
-	}
+func (rr *RoundRobin) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	if rr.backends[rr.iterator].Alive() {
-		rr.backends[rr.iterator].ServeHTTP(w, r)
-	}
-
-	rr.iterator++
 }

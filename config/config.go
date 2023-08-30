@@ -3,7 +3,6 @@ package config
 import (
 	"gopkg.in/yaml.v3"
 	"io"
-	"time"
 )
 
 type Config struct {
@@ -34,22 +33,4 @@ func Parse(file io.Reader) (*Config, error) {
 	}
 
 	return cfg, nil
-}
-
-func (h *Healthcheck) TimeoutDuration() (time.Duration, error) {
-	timeoutDuration, err := time.ParseDuration(h.Timeout)
-	if err != nil {
-		return 0, err
-	}
-
-	return timeoutDuration, nil
-}
-
-func (h *Healthcheck) IntervalDuration() (time.Duration, error) {
-	intervalDuration, err := time.ParseDuration(h.Interval)
-	if err != nil {
-		return 0, err
-	}
-
-	return intervalDuration, nil
 }
