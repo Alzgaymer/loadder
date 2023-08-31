@@ -1,19 +1,21 @@
-algorithm: RR
+algorithm: weighted-round-robin
 load-balancer-address: :8080
 
 services:
   first-service:
     name: hello-world-1
     address: http://localhost:9000
+    weight: 2
     healthcheck:
       path: /healthcheck
       interval: 1s
       timeout: 2s
       unhealthy-threshold: 2
-      timeout-threshold:
+      timeout-threshold: 2
   second-service:
     name: hello-world-2
     address: http://localhost:9001
+    weight: 1
     healthcheck:
       path: /healthcheck
       interval: 1s

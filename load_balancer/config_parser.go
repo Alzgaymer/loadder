@@ -12,9 +12,7 @@ func Parse(c *config.Config) ([]*Service, error) {
 	services := make([]*Service, 0, len(c.Services))
 
 	for _, service := range c.Services {
-		address := fmt.Sprintf("http://%s", service.Address)
-
-		u, err := url.Parse(address)
+		u, err := url.Parse(service.Address)
 		if err != nil {
 			return nil, err
 		}
@@ -28,7 +26,6 @@ func Parse(c *config.Config) ([]*Service, error) {
 
 		services = append(services, NewService(
 			httputil.NewSingleHostReverseProxy(u),
-			fmt.Sprintf("%s%s", address, service.Healthcheck.Path),
 			&HealthStat{
 				UnhealthyThreshold: service.Healthcheck.UnhealthyThreshold,
 				TimeoutThreshold:   service.Healthcheck.TimeoutThreshold,
@@ -36,6 +33,7 @@ func Parse(c *config.Config) ([]*Service, error) {
 				timeout:            time.NewTicker(service.Healthcheck.TimoutDuration()),
 				intervalDuration:   service.Healthcheck.IntervalDuration(),
 				timeoutDuration:    service.Healthcheck.TimoutDuration(),
+				healthEndpoint:     fmt.Sprintf("%s%s", service.Address, service.Healthcheck.Path),
 			},
 			&AlgorithmStat{
 				weight: wieght,

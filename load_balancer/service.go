@@ -14,9 +14,9 @@ type HealthStat struct {
 	timeout            *time.Ticker
 	intervalDuration   time.Duration
 	timeoutDuration    time.Duration
-
-	currentTimeout   int
-	currentUnhealthy int
+	healthEndpoint     string
+	currentTimeout     int
+	currentUnhealthy   int
 }
 
 const (
@@ -28,16 +28,16 @@ type AlgorithmStat struct {
 }
 
 type Service struct {
-	api            *httputil.ReverseProxy
-	healthEndpoint string
-	alive          bool
-	mux            sync.RWMutex
-	healthStat     *HealthStat
-	algorithmStat  *AlgorithmStat
+	api *httputil.ReverseProxy
+
+	alive         bool
+	mux           sync.RWMutex
+	healthStat    *HealthStat
+	algorithmStat *AlgorithmStat
 }
 
-func NewService(api *httputil.ReverseProxy, healthEndpoint string, healthStat *HealthStat, algorithmStat *AlgorithmStat) *Service {
-	return &Service{api: api, healthEndpoint: healthEndpoint, healthStat: healthStat, algorithmStat: algorithmStat}
+func NewService(api *httputil.ReverseProxy, healthStat *HealthStat, algorithmStat *AlgorithmStat) *Service {
+	return &Service{api: api, healthStat: healthStat, algorithmStat: algorithmStat}
 }
 
 func (s *Service) Weight() float64 {
@@ -47,6 +47,7 @@ func (s *Service) Weight() float64 {
 func (s *Service) Healthy() {
 	s.healthStat.currentUnhealthy = 0
 	s.healthStat.currentTimeout = 0
+	s.SetAlive()
 }
 
 func (s *Service) IncreaseTimeoutThreshold() {
@@ -54,7 +55,7 @@ func (s *Service) IncreaseTimeoutThreshold() {
 }
 
 func (s *Service) IncreaseUnhealthyThreshold() {
-	s.healthStat.currentTimeout++
+	s.healthStat.currentUnhealthy++
 }
 
 func (s *Service) TimeoutThreshold() int {
@@ -85,7 +86,7 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Service) HealthEndpoint() string {
-	return s.healthEndpoint
+	return s.healthStat.healthEndpoint
 }
 
 func (s *Service) Alive() bool {

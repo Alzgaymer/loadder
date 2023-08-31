@@ -21,7 +21,16 @@ func (lb *LoadBalancer) Run(ctx context.Context) error {
 		}
 	}()
 
+	lb.logger.Info("load balancer started", zap.String("address", lb.server.Addr))
+
 	return lb.server.ListenAndServe()
+}
+
+func WithLogger(logger *zap.Logger) Option {
+	return func(balancer *LoadBalancer) error {
+		balancer.logger = logger
+		return nil
+	}
 }
 
 func WithAlgorithm(algorithm Algorithm) Option {

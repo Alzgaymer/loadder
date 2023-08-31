@@ -42,11 +42,13 @@ func main() {
 	if err != nil {
 		logger.Panic("failed to define algorithm", zap.Error(err), zap.String("algorithm", cfg.Algorithm))
 	}
+	algorithm.Add(services...)
 
 	balancer, err := lb.NewBalancer(
 		lb.WithAlgorithm(algorithm),
 		lb.WithAddress(cfg.LoadBalancerAddress),
 		lb.WithServices(services...),
+		lb.WithLogger(logger),
 	)
 	if err != nil {
 		logger.Panic("failed to create load balancer", zap.Error(err))
