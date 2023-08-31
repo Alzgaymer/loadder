@@ -9,6 +9,10 @@ import (
 )
 
 func Parse(c *config.Config) ([]*Service, error) {
+	if c == nil {
+		return nil, fmt.Errorf("config is nil")
+	}
+
 	services := make([]*Service, 0, len(c.Services))
 
 	for _, service := range c.Services {

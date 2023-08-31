@@ -2,6 +2,7 @@ package lb
 
 import (
 	"context"
+	"errors"
 	"go.uber.org/zap"
 	"net/http"
 )
@@ -10,6 +11,10 @@ type LoadBalancer struct {
 	server   *http.Server
 	services []*Service
 	logger   *zap.Logger
+}
+
+func (lb *LoadBalancer) Stop(ctx context.Context) error {
+	return lb.server.Shutdown(ctx)
 }
 
 func (lb *LoadBalancer) Run(ctx context.Context) error {
@@ -40,8 +45,13 @@ func WithAlgorithm(algorithm Algorithm) Option {
 	}
 }
 
+var EmptyAddress = errors.New("empty address")
+
 func WithAddress(address string) Option {
 	return func(balancer *LoadBalancer) error {
+		if address == "" {
+			return EmptyAddress
+		}
 		balancer.server.Addr = address
 		return nil
 	}

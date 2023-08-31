@@ -40,16 +40,16 @@ func (h *Healthcheck) TimoutDuration() time.Duration {
 }
 
 type Service struct {
-	Name        string      `yaml:"name"`
-	Address     string      `yaml:"address"`
-	Weight      float64     `yaml:"weight"`
-	Healthcheck Healthcheck `yaml:"healthcheck"`
+	Healthcheck *Healthcheck `yaml:"healthcheck"`
+	Name        string       `yaml:"name"`
+	Address     string       `yaml:"address"`
+	Weight      float64      `yaml:"weight"`
 }
 
 func Parse(file io.Reader) (*Config, error) {
 	cfg := &Config{}
 
-	if err := yaml.NewDecoder(file).Decode(cfg); err != nil {
+	if err := yaml.NewDecoder(file).Decode(cfg); err != nil { //nolint:typecheck
 		return nil, err
 	}
 

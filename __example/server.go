@@ -11,7 +11,6 @@ var (
 )
 
 func main() {
-
 	flag.Parse()
 
 	mux := http.NewServeMux()

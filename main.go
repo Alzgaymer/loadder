@@ -42,6 +42,7 @@ func main() {
 	if err != nil {
 		logger.Panic("failed to define algorithm", zap.Error(err), zap.String("algorithm", cfg.Algorithm))
 	}
+
 	algorithm.Add(services...)
 
 	balancer, err := lb.NewBalancer(
