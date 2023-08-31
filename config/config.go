@@ -3,6 +3,8 @@ package config
 import (
 	"gopkg.in/yaml.v3"
 	"io"
+	"log"
+	"time"
 )
 
 type Config struct {
@@ -19,9 +21,28 @@ type Healthcheck struct {
 	TimeoutThreshold   int    `yaml:"timeout-threshold"`
 }
 
+func (h *Healthcheck) IntervalDuration() time.Duration {
+	duration, err := time.ParseDuration(h.Interval)
+	if err != nil {
+		log.Fatalf("invalid interval duration: %s", err)
+	}
+
+	return duration
+}
+
+func (h *Healthcheck) TimoutDuration() time.Duration {
+	duration, err := time.ParseDuration(h.Timeout)
+	if err != nil {
+		log.Fatalf("invalid interval duration: %s", err)
+	}
+
+	return duration
+}
+
 type Service struct {
 	Name        string      `yaml:"name"`
 	Address     string      `yaml:"address"`
+	Weight      float64     `yaml:"weight"`
 	Healthcheck Healthcheck `yaml:"healthcheck"`
 }
 

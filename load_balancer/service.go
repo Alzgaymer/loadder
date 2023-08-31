@@ -19,12 +19,29 @@ type HealthStat struct {
 	currentUnhealthy int
 }
 
+const (
+	NoWeight = iota - 1
+)
+
+type AlgorithmStat struct {
+	weight float64
+}
+
 type Service struct {
 	api            *httputil.ReverseProxy
 	healthEndpoint string
 	alive          bool
 	mux            sync.RWMutex
 	healthStat     *HealthStat
+	algorithmStat  *AlgorithmStat
+}
+
+func NewService(api *httputil.ReverseProxy, healthEndpoint string, healthStat *HealthStat, algorithmStat *AlgorithmStat) *Service {
+	return &Service{api: api, healthEndpoint: healthEndpoint, healthStat: healthStat, algorithmStat: algorithmStat}
+}
+
+func (s *Service) Weight() float64 {
+	return s.algorithmStat.weight
 }
 
 func (s *Service) Healthy() {

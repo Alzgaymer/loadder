@@ -38,6 +38,13 @@ func WithAddress(address string) Option {
 	}
 }
 
+func WithServices(s ...*Service) Option {
+	return func(balancer *LoadBalancer) error {
+		balancer.services = s
+		return nil
+	}
+}
+
 type Option func(balancer *LoadBalancer) error
 
 func NewBalancer(opts ...Option) (*LoadBalancer, error) {
